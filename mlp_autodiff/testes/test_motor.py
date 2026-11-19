@@ -169,3 +169,29 @@ def test_sigmoid_tanh_estaveis_em_entradas_grandes():
     x = Tensor([-1000.0, 1000.0])
     (x.sigmoid().sum() + x.tanh().sum()).backward()
     assert np.all(np.isfinite(x.grad))
+
+
+# ----------------------------------------------------------------------
+# Matmul só com 2D e média/soma com tupla de eixos.
+# ----------------------------------------------------------------------
+@pytest.mark.parametrize("shapes", [((4,), (4, 3)), ((3, 4), (4,)), ((4,), (4,)),
+                                    ((2, 3, 4), (4, 5))])
+def test_matmul_recusa_o_que_nao_e_matriz_2d(shapes):
+    # Em vetor 1D o .T não transpõe e o gradiente sairia errado sem aviso:
+    # por isso o motor recusa com um erro claro (use reshape para 2D).
+    with pytest.raises(ValueError):
+        Tensor(np.ones(shapes[0])) @ Tensor(np.ones(shapes[1]))
+
+
+@pytest.mark.parametrize("axis", [(0, 1), (0, 2), (1,), -1])
+@pytest.mark.parametrize("keepdims", [False, True])
+@pytest.mark.parametrize("nome_op", ["sum", "mean"])
+def test_soma_e_media_com_tupla_de_eixos(axis, keepdims, nome_op):
+    x = aleatorio((2, 3, 4))
+    reduzido_np = getattr(np, nome_op)(x.data, axis=axis, keepdims=keepdims)
+    C = pesos_fixos(reduzido_np.shape)
+
+    def funcao():
+        return (getattr(x, nome_op)(axis=axis, keepdims=keepdims) * C).sum()
+    assert np.allclose(getattr(x, nome_op)(axis=axis, keepdims=keepdims).data, reduzido_np)
+    assert verificar_gradientes(funcao, [x]) < TOLERANCIA
