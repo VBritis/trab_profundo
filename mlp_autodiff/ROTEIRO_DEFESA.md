@@ -21,7 +21,7 @@
 | `Tensor.__init__` | Guarda `data` (float64), `grad` (zeros, mesmo shape), `parents`, `_backward` (começa sem fazer nada), `nome`, `op`. |
 | `__add__`, `__sub__`, `__mul__`, `__truediv__` | Calculam o resultado e definem `_backward` com a derivada de cada lado (comentário em cima). Todas passam por `_desfazer_broadcast`. |
 | `__neg__`, `__radd__`... | Negação e versões "reversas" (`2 - t` chama `t.__rsub__(2)`), que só reaproveitam as anteriores. |
-| `__matmul__` | `C = A @ B` → `dA = G @ Bᵀ`, `dB = Aᵀ @ G`. Os shapes "fecham" sozinhos (ver pergunta 3). |
+| `__matmul__` | `C = A @ B` → `dA = G @ Bᵀ`, `dB = Aᵀ @ G`. Os shapes "fecham" sozinhos (ver pergunta 3). Só aceita matrizes 2D: em vetor 1D o `.T` não transpõe, então recusamos com erro claro. |
 | `__pow__`, `exp`, `log`, `sqrt` | Derivadas clássicas: `p·x^(p-1)`, `eˣ`, `1/x`, `1/(2√x)`. `log_base` e `mean` são **compostos** (sem backward próprio). |
 | `sum(axis, keepdims)` | A derivada da soma é 1 para cada elemento: o gradiente é "copiado" de volta para todas as posições somadas. |
 | `sigmoid`, `tanh` | Primitivas por **estabilidade numérica**: `1/(1+e^-x)` composta dá `inf/inf = NaN` para x muito negativo. Usamos `σ(x) = 0,5·(1 + tanh(x/2))`. O teste mostra que o gradiente é igual ao da versão composta. |
