@@ -132,6 +132,9 @@ class Tensor:
     # ------------------------------------------------------------------
     def __matmul__(self, outro):
         outro = _como_tensor(outro)
+        # Só matrizes 2D: em vetor 1D o .T não transpõe e o gradiente sairia errado.
+        if self.data.ndim != 2 or outro.data.ndim != 2:
+            raise ValueError("matmul aceita apenas matrizes 2D (use reshape)")
         saida = Tensor(self.data @ outro.data, (self, outro), op="@")
 
         # C = A @ B, com A:(n,k), B:(k,m), C:(n,m), G = dL/dC com shape (n,m)
@@ -210,7 +213,8 @@ class Tensor:
         if axis is None:
             quantidade = self.data.size
         else:
-            quantidade = self.data.shape[axis]
+            eixos = axis if isinstance(axis, tuple) else (axis,)
+            quantidade = int(np.prod([self.data.shape[e] for e in eixos]))
         return self.sum(axis=axis, keepdims=keepdims) / quantidade
 
     # ------------------------------------------------------------------
